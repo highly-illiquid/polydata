@@ -1,0 +1,23 @@
+# Mac OS metadata files
+._*
+
+# Parquet files
+*.parquet
+
+# Data files
+markets.csv
+processed/
+goldsky/
+
+# Python cache
+__pycache__/
+*.py[codz]
+*$py.class
+*.so
+
+# Environment variables
+.env
+.venv
+
+# Jupyter checkpoints
+.ipynb_checkpoints

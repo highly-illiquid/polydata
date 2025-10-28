@@ -1,0 +1,6 @@
+polars
+pandas
+matplotlib
+jupyter
+notebook
+requests
