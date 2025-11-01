@@ -1,24 +1,14 @@
 # Active Context
 
-**Current Focus:** Git repository restoration (in-place, preserving data lake), then debugging Jupyter Lab kernel crash during PnL analysis.
+**Current Focus:** The data pipeline is now stable and collecting data automatically. The project's focus is shifting from pipeline engineering to data analysis. The primary goal is to explore the collected data to find "alpha" (i.e., trading advantages or insights).
 
 **Recent Changes:**
-- **Git Repository Lost:** The local Git repository (the `.git` directory) was lost during a migration, necessitating a full restoration of history.
-- **`replace` Tool Unreliability:** The `replace` tool proved unreliable for complex, multi-line JSON modifications within Jupyter notebooks, leading to file corruption. This highlighted the need for extreme caution or alternative methods for such changes.
-- **`tmux` Configuration:** Addressed issues with `tmux` keybindings and ensuring `uv` was in PATH for SSH sessions within the `connect_jupyter.sh` script.
-- **`matplotlib` Installation:** Diagnosed and fixed `ModuleNotFoundError` for `matplotlib` by ensuring all dependencies were correctly installed in the virtual environment.
-- **Jupyter Lab Kernel Crash:** The Jupyter Lab kernel is crashing when running the PnL analysis notebook, likely due to Out-of-Memory (OOM) errors or complex Polars query execution.
+- **Data Pipeline Stabilized:** A complex, multi-layered bug in the `update_goldsky.py` script was resolved. The fix involved correcting the cron job's execution environment and, most critically, clearing stale Python `.pyc` cache files that were causing the script to run old code.
+- **Reverted to Stable Code:** After several failed optimization attempts, the `get_latest_timestamp` function was reverted to its original, working-but-slow implementation. Stability was prioritized over performance.
 
 **Next Steps:**
-1.  Execute the revised Git restoration plan (in-place, preserving the data lake).
-2.  Debug and fix the Jupyter Lab kernel crash in `Example 1 Trader Analysis.ipynb`.
-3.  Complete the data analysis phase.
+1.  **Begin Data Exploration:** Start analyzing the processed trade data in `processed/trades/`.
+2.  **Address Kernel Crash:** The first step in exploration will be to open `Example 1 Trader Analysis.ipynb` and debug the Jupyter Lab kernel crash that was previously observed. This is likely an out-of-memory issue that needs to be solved by making the analysis code more memory-efficient.
 
 **Important Patterns and Preferences:**
-- **Memory First:** All data processing must be designed with low memory usage as a primary constraint. Prefer streaming, chunking, or lazy operations where possible.
-- **Defensive Coding:** Assume all external data sources and historical data are unstable or inconsistent. Code must be resilient to schema changes and data type drift.
-- **Verify, then run:** For long-running processes, perform a test run on a small subset of the data to verify correctness before launching the full run.
-- **`replace` Tool Caution:** Avoid using the `replace` tool for large, multi-line JSON modifications within files like Jupyter notebooks. Prefer manual edits or `write_file` with carefully constructed and validated JSON content.
-- **Git Recovery Strategy:** When `.git` is lost but the working directory (including large data assets) must be preserved, use an in-place Git recovery strategy involving temporary cloning and `.git` directory transfer.
-- **User Communication:** Explicitly confirm understanding of critical steps, especially those involving data deletion, storage constraints, or potential data loss. Ensure clarity and address user concerns proactively.
-- **Environment Setup:** Always verify that all necessary dependencies are installed and the correct Python environment is activated for any script or application execution.
+- **Memory-Efficient Analysis:** Just as with the pipeline, all data analysis code written in the Jupyter notebooks must be highly memory-efficient. Use lazy operations (`scan_parquet`), filter early, and avoid loading large datasets into memory with `.collect()` wherever possible.
