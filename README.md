@@ -1,6 +1,6 @@
 # Polymarket Data
 
-A comprehensive data pipeline for fetching, processing, and analyzing Polymarket trading data. This system collects market information, order-filled events, and processes them into structured trade data.
+A comprehensive data pipeline for fetching, processing, and analyzing Polymarket trading data. This system collects market information, order-filled events, and processes them into a structured, partitioned Parquet datalake.
 
 ## Quick Download
 
@@ -8,11 +8,11 @@ A comprehensive data pipeline for fetching, processing, and analyzing Polymarket
 
 ## Overview
 
-This pipeline performs three main operations:
+This pipeline performs three main operations, storing all data in a partitioned Parquet datalake for high performance and memory efficiency:
 
-1. **Market Data Collection** - Fetches all Polymarket markets with metadata
-2. **Order Event Scraping** - Collects order-filled events from Goldsky subgraph
-3. **Trade Processing** - Transforms raw order events into structured trade data
+1.  **Market Data Collection** - Fetches all Polymarket markets with metadata.
+2.  **Order Event Scraping** - Collects order-filled events from the Goldsky subgraph.
+3.  **Trade Processing** - Transforms raw order events into structured trade data.
 
 ## Installation
 
@@ -67,192 +67,120 @@ poly_data/
 │   ├── update_goldsky.py      # Scrape order events from Goldsky
 │   └── process_live.py        # Process orders into trades
 ├── poly_utils/                # Utility functions
-│   └── utils.py               # Market loading and missing token handling
-├── markets.csv                # Main markets dataset
-├── missing_markets.csv        # Markets discovered from trades (auto-generated)
-├── goldsky/                   # Order-filled events (auto-generated)
-│   └── orderFilled.csv
-└── processed/                 # Processed trade data (auto-generated)
-    └── trades.csv
+│   └── utils.py               # Market loading and other helpers
+├── markets_partitioned/       # Raw market data (partitioned by year/month)
+│   └── ...
+├── goldsky/                   # Raw order-filled events (partitioned by year/month)
+│   └── orderFilled/
+│       └── ...
+└── processed/                 # Processed trade data (partitioned by year/month)
+    └── trades/
+        └── ...
 ```
 
-## Data Files
+## Data Datalake
 
-### markets.csv
-Market metadata including:
-- Market question, outcomes, and tokens
-- Creation/close times and slugs
-- Trading volume and condition IDs
-- Negative risk indicators
+All data is stored in a partitioned Parquet format to allow for efficient querying and to minimize memory usage, especially on resource-constrained systems.
 
-**Fields**: `createdAt`, `id`, `question`, `answer1`, `answer2`, `neg_risk`, `market_slug`, `token1`, `token2`, `condition_id`, `volume`, `ticker`, `closedTime`
+### `markets_partitioned/`
+Contains market metadata including questions, outcomes, tokens, creation/close times, and volume. Partitioned by the market creation date.
 
-### goldsky/orderFilled.csv
-Raw order-filled events with:
-- Maker/taker addresses and asset IDs
-- Fill amounts and transaction hashes
-- Unix timestamps
+### `goldsky/orderFilled/`
+Contains raw order-filled events from the Goldsky subgraph, including maker/taker addresses, amounts, and transaction hashes. Partitioned by the event timestamp.
 
-**Fields**: `timestamp`, `maker`, `makerAssetId`, `makerAmountFilled`, `taker`, `takerAssetId`, `takerAmountFilled`, `transactionHash`
-
-### processed/trades.csv
-Structured trade data including:
-- Market ID mapping and trade direction
-- Price, USD amount, and token amount
-- Maker/taker roles and transaction details
-
-**Fields**: `timestamp`, `market_id`, `maker`, `taker`, `nonusdc_side`, `maker_direction`, `taker_direction`, `price`, `usd_amount`, `token_amount`, `transactionHash`
+### `processed/trades/`
+Contains structured and enriched trade data, ready for analysis. This includes market IDs, trade direction, price, and USD amounts. Partitioned by the trade timestamp.
 
 ## Pipeline Stages
 
 ### 1. Update Markets (`update_markets.py`)
 
-Fetches all markets from Polymarket API in chronological order.
+Fetches all markets from the Polymarket API and stores them in the `markets_partitioned` dataset.
 
 **Features**:
 - Automatic resume from last offset (idempotent)
 - Rate limiting and error handling
 - Batch fetching (500 markets per request)
 
-**Usage**:
-```bash
-uv run python -c "from update_utils.update_markets import update_markets; update_markets()"
-```
-
 ### 2. Update Goldsky (`update_goldsky.py`)
 
-Scrapes order-filled events from Goldsky subgraph API.
+Scrapes order-filled events from the Goldsky subgraph API and saves them to the `goldsky/orderFilled` dataset.
 
 **Features**:
-- Resumes from last timestamp automatically
-- Handles GraphQL queries with pagination
-- Deduplicates events
-
-**Usage**:
-```bash
-uv run python -c "from update_utils.update_goldsky import update_goldsky; update_goldsky()"
-```
+- Resumes automatically from the last recorded timestamp in the dataset.
+- Handles GraphQL queries with pagination.
+- Deduplicates events.
 
 ### 3. Process Live Trades (`process_live.py`)
 
-Processes raw order events into structured trades.
+Processes raw order events from `goldsky/orderFilled` into structured trades in `processed/trades`.
 
 **Features**:
-- Maps asset IDs to markets using token lookup
-- Calculates prices and trade directions
-- Identifies BUY/SELL sides
-- Handles missing markets by discovering them from trades
-- Incremental processing from last checkpoint
-
-**Usage**:
-```bash
-uv run python -c "from update_utils.process_live import process_live; process_live()"
-```
-
-**Processing Logic**:
-- Identifies non-USDC asset in each trade
-- Maps to market and outcome token (token1/token2)
-- Determines maker/taker directions (BUY/SELL)
-- Calculates price as USDC amount per outcome token
-- Converts amounts from raw units (divides by 10^6)
+- Maps asset IDs to markets using a token lookup.
+- Calculates prices and trade directions.
+- Handles missing markets by discovering them from trades.
+- Incremental processing from the last checkpoint.
 
 ## Dependencies
 
 Dependencies are managed via `pyproject.toml` and installed automatically with `uv sync`.
 
 **Key Libraries**:
-- `polars` - Fast DataFrame operations
-- `pandas` - Data manipulation
-- `gql` - GraphQL client for Goldsky
-- `requests` - HTTP requests to Polymarket API
-- `flatten-json` - JSON flattening for nested responses
+- `polars` - Fast DataFrame operations for the Parquet datalake.
+- `pandas` - Data manipulation.
+- `gql` - GraphQL client for Goldsky.
+- `requests` - HTTP requests to Polymarket API.
 
 **Development Dependencies** (optional, installed with `--extra dev`):
 - `jupyter` - Interactive notebooks
 - `notebook` - Jupyter notebook interface
-- `ipykernel` - Python kernel for Jupyter
-
-## Features
-
-### Resumable Operations
-All stages automatically resume from where they left off:
-- **Markets**: Counts existing CSV rows to set offset
-- **Goldsky**: Reads last timestamp from orderFilled.csv
-- **Processing**: Finds last processed transaction hash
-
-### Error Handling
-- Automatic retries on network failures
-- Rate limit detection and backoff
-- Server error (500) handling
-- Graceful fallbacks for missing data
-
-### Missing Market Discovery
-The processing stage automatically discovers markets that weren't in the initial markets.csv (e.g., markets created after last update) and fetches them via the Polymarket API, saving to `missing_markets.csv`.
-
-## Data Schema Details
-
-### Trade Direction Logic
-- **Taker Direction**: BUY if paying USDC, SELL if receiving USDC
-- **Maker Direction**: Opposite of taker direction
-- **Price**: Always expressed as USDC per outcome token
-
-### Asset Mapping
-- `makerAssetId`/`takerAssetId` of "0" represents USDC
-- Non-zero IDs are outcome token IDs (token1/token2 from markets)
-- Each trade involves USDC and one outcome token
-
-## Notes
-
-- All amounts are normalized to standard decimal format (divided by 10^6)
-- Timestamps are converted from Unix epoch to datetime
-- Platform wallets (`0xc5d563a36ae78145c45a50134d48a1215220f80a`, `0x4bfb41d5b3570defd03c39a9a4d8de6bd8b8982e`) are tracked in `poly_utils/utils.py`
-- Negative risk markets are flagged in the market data
-
-## Troubleshooting
-
-**Issue**: Markets not found during processing
-**Solution**: Run `update_markets()` first, or let `process_live()` auto-discover them
-
-**Issue**: Duplicate trades
-**Solution**: Deduplication is automatic - re-run processing from scratch if needed
-
-**Issue**: Rate limiting
-**Solution**: The pipeline handles this automatically with exponential backoff
+- `ipykernel` - Python kernel for Jupyter.
 
 ## Analysis
 
 ### Loading Data
 
-```python
-import pandas as pd
-import polars as pl
-from poly_utils import get_markets, PLATFORM_WALLETS
+The partitioned Parquet format allows for very efficient data loading and filtering using Polars' `scan_parquet` function.
 
-# Load markets
+```python
+import polars as pl
+from poly_utils import get_markets
+
+# Load markets (helper function handles partitioned data)
 markets_df = get_markets()
 
-# Load trades
-df = pl.scan_csv("processed/trades.csv").collect(streaming=True)
-df = df.with_columns(
-    pl.col("timestamp").str.to_datetime().alias("timestamp")
-)
+# Scan the processed trades dataset
+# This is a lazy scan, no data is loaded into memory yet
+df = pl.scan_parquet("processed/trades/**/*.parquet")
+
+# You can now apply filters or transformations before collecting the data
+# For example, filter for trades in a specific time range
+df = df.filter(pl.col("timestamp").is_between(
+    "2023-01-01T00:00:00", "2023-02-01T00:00:00"
+))
+
+# Only when you call .collect() is the data actually read and processed
+results = df.collect()
 ```
 
 ### Filtering Trades by User
 
-**Important**: When filtering for a specific user's trades, filter by the `maker` column. Even though it appears you're only getting trades where the user is the maker, this is how Polymarket generates events at the contract level. The `maker` column shows trades from that user's perspective including price.
+**Important**: When filtering for a specific user's trades, filter by the `maker` column. This is how Polymarket generates events at the contract level. The `maker` column shows trades from that user's perspective, including price.
 
 ```python
 USERS = {
     'domah': '0x9d84ce0306f8551e02efef1680475fc0f1dc1344',
     '50pence': '0x3cf3e8d5427aed066a7a5926980600f6c3cf87b3',
-    'fhantom': '0x6356fb47642a028bc09df92023c35a21a0b41885',
-    'car': '0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b',
-    'theo4': '0x56687bf447db6ffa42ffe2204a05edaa20f55839'
 }
 
-# Get all trades for a specific user
-trader_df = df.filter((pl.col("maker") == USERS['domah']))
+# Scan the trades dataset
+trades_df = pl.scan_parquet("processed/trades/**/*.parquet")
+
+# Get all trades for a specific user (lazy operation)
+trader_lazy_df = trades_df.filter(pl.col("maker") == USERS['domah'])
+
+# Collect the results into a DataFrame
+trader_df = trader_lazy_df.collect()
 ```
 
 ## License
