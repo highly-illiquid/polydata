@@ -60,6 +60,13 @@ echo "Configuring zoxide..."
 echo 'eval "$(zoxide init bash)"' >> ~/.bashrc
 echo 'alias cd="z"' >> ~/.bashrc
 
+# Install fzf
+echo "Installing fzf..."
+if [ ! -d ~/.fzf ]; then
+    git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+    ~/.fzf/install --all
+fi
+
 # --- Configure tmux ---
 echo "Configuring tmux..."
 # Ensure .tmux.conf exists
@@ -68,6 +75,44 @@ touch ~/.tmux.conf
 grep -q "set-option -g set-clipboard on" ~/.tmux.conf || echo "set-option -g set-clipboard on" >> ~/.tmux.conf
 # Add or ensure vi mode is enabled
 grep -q "setw -g mode-keys vi" ~/.tmux.conf || echo "setw -g mode-keys vi" >> ~/.tmux.conf
+
+# --- Setup Tmux Plugins ---
+echo "Setting up Tmux plugins for session persistence..."
+# Install tpm (Tmux Plugin Manager) if it's not already there
+if [ ! -d ~/.tmux/plugins/tpm ]; then
+    echo "Installing Tmux Plugin Manager (tpm)..."
+    git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+fi
+
+# Add plugin configuration to .tmux.conf if not already present
+if ! grep -q "tmux-plugins/tpm" ~/.tmux.conf; then
+    echo "Configuring tmux for plugins..."
+    cat <<EOT >> ~/.tmux.conf
+
+# --- Tmux Plugin Configuration ---
+# List of plugins
+set -g @plugin 'tmux-plugins/tpm'
+set -g @plugin 'tmux-plugins/tmux-resurrect'
+set -g @plugin 'tmux-plugins/tmux-continuum'
+
+# Settings for plugins
+set -g @continuum-restore 'on' # Auto-restore on tmux start
+
+# Initialize TMUX plugin manager (keep this at the very bottom)
+run '~/.tmux/plugins/tpm/tpm'
+EOT
+    echo "Tmux plugins configured. Installing them now..."
+    # Start a temporary tmux server in the background to install plugins
+    tmux start-server
+    # Install the plugins by running the tpm installer script
+    ~/.tmux/plugins/tpm/bin/install_plugins
+    # Kill the temporary server
+    tmux kill-server
+else
+    echo "Tmux plugins already configured."
+fi
+echo "Tmux auto-save and restore setup is complete."
+
 
 # --- Step 3: Install UV (Python Package Manager) ---
 echo "Installing uv..."

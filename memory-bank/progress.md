@@ -1,21 +1,24 @@
 # Progress
 
 **What Works:**
-- The data pipeline (`update_all.py`) is fully functional and works correctly both manually and as a cron job.
-- The cron job is configured correctly, using a wrapper script that ensures the correct working directory and prevents overlapping runs.
-- The original data pipeline code is confirmed to be working, although the `get_latest_timestamp` function is known to be slow to start as it scans all historical files.
+- **Dual-Server Automation:** `start-analysis.sh` and `stop-analysis.sh` are fully functional, handling server creation/deletion, volume attachment/detachment, and code updates.
+- **Data Safety:** The automation includes a critical safety check that prevents the analyzer from being deleted if there are uncommitted Git changes.
+- **Persistent Environment:** The `poly-fetcher` correctly saves and restores `tmux` sessions across reboots using `tmux-continuum`.
+- **Data Pipeline:** The core data collection (`update_all.py`) continues to run reliably on the fetcher.
+- **Infrastructure:** The split architecture (permanent fetcher, on-demand analyzer, shared volume) is fully implemented and snapshotted.
 
 **What's Left to Build:**
-- Explore the processed data to find "alpha" (trading opportunities or insights).
-- Debug the Jupyter Lab kernel crash in `Example 1 Trader Analysis.ipynb` (this will likely be the first step in exploring the data).
+- **End-to-End Verification:** Perform a live test run of the analysis workflow to confirm all scripts interact correctly in a real-world scenario.
+- **Data Analysis:** Actually begin the trading analysis in the Jupyter notebooks.
 
 **Current Status:**
-- The data pipeline is stable and running. The complex bug that was causing it to download old data has been resolved.
-- The project is now ready to transition from data pipeline maintenance to data analysis and exploration.
+- The entire infrastructure and automation suite is built and deployed. The project is now operationally ready for heavy data analysis.
 
 **Key Fixes & Learnings:**
-- **The "Ghost in the Machine" Bug:** A major, multi-hour debugging session was required to fix the `update_goldsky.py` script. The resolution involved several key steps that are critical learnings for the project:
-    1.  **Cron Environment:** The initial problem was the cron job running from the wrong directory. This was fixed by adding `cd /root/poly-data` to the `run_update.sh` wrapper script.
-    2.  **Stale `.pyc` Files:** The most significant breakthrough was the discovery of stale, cached `.pyc` files. These caused the script to run old, buggy code even after the source `.py` file was reverted, leading to contradictory and baffling errors. Deleting all `__pycache__` directories forced Python to re-compile the source and was the ultimate fix that restored the script to a known, working state.
-    3.  **Schema Drift:** The underlying data issue was schema drift in the `timestamp` column of the raw data (`Int64` in older files, `String` in newer files). While the original script handles this (likely by `polars` being flexible during the full scan), it was a key factor in the failed optimization attempts.
-- **Decision to Revert:** After several failed attempts to optimize the slow `get_latest_timestamp` function, the correct decision was to revert to the original, working-but-slow code. The stability of the working code was prioritized over the performance of a new, unproven solution.
+- **Safety First in Automation:** Automating the destruction of resources (like deleting the analyzer server) carries high risk. Adding a "Git Safety Check" to the shutdown script was a critical enhancement to prevent the accidental loss of code changes.
+- **Architectural Journey & Clarification:** The project's architecture underwent several clarifications.
+    1. The initial plan was a dual-server model (fetcher + on-demand analyzer).
+    2. A misunderstanding led to a temporary pivot to a single, resizable server model.
+    3. The user ultimately confirmed the desire for the more robust **dual-server model**. This was a critical lesson in ensuring shared understanding before implementing infrastructure, as it significantly changed the setup and automation logic.
+- **SSH Debugging:** A lengthy debugging session to resolve an SSH `Permission denied` error on the analyzer server revealed multiple root causes in sequence: an incorrect assumption about key corruption, a missing key file, and finally a shell-specific globbing error (`zsh: no matches found`). This highlighted the need for systematic, evidence-based troubleshooting.
+- **`uv` Installer Changes:** Discovered that the `uv` installer's default path changed from `~/.cargo/bin` to `~/.local/bin`, requiring updates to setup scripts and environment configuration.
