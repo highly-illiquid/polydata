@@ -1,8 +1,12 @@
 # Active Context
 
-**Current Focus:** The infrastructure and automation are fully implemented. The immediate focus is to verify the end-to-end workflow by running a live analysis session using the new scripts.
+### Current Status
+- **Restructure Complete**: Project separated into `fetcher/`, `analysis/`, and `shared/`.
+- **Imports Fixed**: All scripts and notebooks updated to use `shared.poly_utils` and correct paths.
+- **Verification**: `update_all.py` verified on fetcher. Imports are valid.
+- **Next Step**: User to run `start-analysis.sh` to switch to Analyzer and begin data analysis.
 
-**Recent Changes:**
+### Recent Changes:
 - **Automation Scripts Completed:** Created `start-analysis.sh` and `stop-analysis.sh` to fully automate the dual-server lifecycle.
     - **Auto-Update:** `start-analysis.sh` now pulls the latest code from GitHub on boot.
     - **Safety Check:** `stop-analysis.sh` aborts if there are unsaved Git changes on the analyzer.

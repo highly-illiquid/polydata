@@ -10,6 +10,16 @@ This architecture is designed for cost-efficiency and separation of concerns. It
 
 - **Storage (`poly-data-volume`):** A persistent Hetzner Cloud Volume that stores all project data. This volume is moved between the two servers.
 
+### 3. Folder Structure (Refactored)
+To ensure separation of concerns and prevent cross-contamination:
+- **`fetcher/`**: Scripts running on the `poly-fetcher` VPS (e.g., `update_all.py`, `run_update.sh`). Optimized for low memory.
+- **`analysis/`**: Jupyter notebooks running on the `poly-analyzer` VPS. Heavy processing allowed.
+- **`shared/`**: Common utilities (`poly_utils/`) used by both.
+- **`processed/`**: Data output directory (Parquet files).
+- **`markets_partitioned/`**: Market metadata (Parquet files).
+
+### 4. Agent "Memory" Persistence
+
 **Automated Workflow:**
 
 The switching process is handled by automation scripts (`start-analysis.sh`, `stop-analysis.sh`) run from the user's local machine using the `hcloud` CLI.
