@@ -64,11 +64,15 @@
 
 
 
-    - **Auto-Update:** `start-analysis.sh` automatically pulls the latest code from GitHub upon creating the server.
+    - **Dual-Repo Deployment:** `start-analysis.sh` uploads SSH keys to the analyzer and clones both the public `poly-data` and private `poly-strategies` repositories.
 
 
 
-    - **Safety Check:** `stop-analysis.sh` checks for uncommitted changes before deleting the server to prevent data loss.
+    - **Auto-Update:** Automatically runs `git pull` on both repos to ensure the latest code is active.
+
+
+
+    - **Safety Check:** `stop-analysis.sh` checks both repositories for uncommitted changes before deleting the server to prevent data loss.
 
 
 

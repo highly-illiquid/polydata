@@ -13,12 +13,24 @@ This architecture is designed for cost-efficiency and separation of concerns. It
 ### 3. Folder Structure (Refactored)
 To ensure separation of concerns and prevent cross-contamination:
 - **`fetcher/`**: Scripts running on the `poly-fetcher` VPS (e.g., `update_all.py`, `run_update.sh`). Optimized for low memory.
-- **`analysis/`**: Jupyter notebooks running on the `poly-analyzer` VPS. Heavy processing allowed.
 - **`shared/`**: Common utilities (`poly_utils/`) used by both.
 - **`processed/`**: Data output directory (Parquet files).
 - **`markets_partitioned/`**: Market metadata (Parquet files).
 
-### 4. Agent "Memory" Persistence
+### 4. Repository Structure (Split Model)
+The project is split into two Git repositories to separate public infrastructure from private trading strategies ("Alpha").
+
+- **Repo 1: `poly-data` (Public/Shared Infrastructure)**
+    - Contains: `fetcher/`, `shared/`, setup scripts.
+    - Role: The "engine" that collects data.
+    - Deployment: Deployed on `poly-fetcher` and `poly-analyzer`.
+
+- **Repo 2: `poly-strategies` (Private Analysis)**
+    - Contains: Jupyter notebooks, backtests, specific research, and automation scripts (`start-analysis.sh`, `stop-analysis.sh`).
+    - Role: The private lab for analysis and strategy development.
+    - Deployment: Deployed ONLY on `poly-analyzer`.
+
+### 5. Agent "Memory" Persistence
 
 **Automated Workflow:**
 

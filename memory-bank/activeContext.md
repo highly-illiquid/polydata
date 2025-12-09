@@ -7,11 +7,15 @@
 - **Next Step**: User to run `start-analysis.sh` to switch to Analyzer and begin data analysis.
 
 ### Recent Changes:
-- **Automation Scripts Completed:** Created `start-analysis.sh` and `stop-analysis.sh` to fully automate the dual-server lifecycle.
+- **Repository Split:** Separated the project into two repositories:
+    - `poly-data`: Public infrastructure and fetcher code.
+    - `poly-strategies`: Private analysis notebooks and automation scripts.
+- **Migration:** Moved all analysis files and `start/stop-analysis.sh` scripts to the new private repo and cleaned them from `poly-data`.
+- **Cleanup:** Removed `connect_jupyter.sh` as the user has switched to VS Code Remote for development.
+- **Automation Scripts:** Created `start-analysis.sh` and `stop-analysis.sh` (now in `poly-strategies`) to fully automate the dual-server lifecycle with dual-repo support.
     - **Auto-Update:** `start-analysis.sh` now pulls the latest code from GitHub on boot.
     - **Safety Check:** `stop-analysis.sh` aborts if there are unsaved Git changes on the analyzer.
-- **Tmux Persistence:** Configured the `poly-fetcher` server with `tmux-resurrect` and `tmux-continuum` to automatically save and restore sessions across reboots (which happen during the analysis workflow).
-- **Custom Setup Scripts:** Updated `setup_vps.sh` (for fetcher) and created `vps_install_modified.sh` (for analyzer) to standardize the environment configuration.
+- **Tmux Persistence:** Configured the `poly-fetcher` server with `tmux-resurrect` and `tmux-continuum` to automatically save and restore sessions across reboots.
 
 **Next Steps:**
 1.  **Optimize Pipeline Startup:** Implement the "Tail Scanning" logic (scanning only the latest year/month partitions) to reduce the `update_all.py` startup time from ~10 minutes to seconds.
