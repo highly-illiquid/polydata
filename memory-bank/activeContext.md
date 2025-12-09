@@ -14,8 +14,9 @@
 - **Custom Setup Scripts:** Updated `setup_vps.sh` (for fetcher) and created `vps_install_modified.sh` (for analyzer) to standardize the environment configuration.
 
 **Next Steps:**
-1.  **Verify Workflow:** Run `./start-analysis.sh` to spin up the environment, perform a basic check, and then run `./stop-analysis.sh` to confirm the safety checks and teardown process work as expected.
-2.  **Begin Data Analysis:** Once verified, proceed with the original goal of exploring the processed trade data in the Jupyter notebooks.
+1.  **Optimize Pipeline Startup:** Implement the "Tail Scanning" logic (scanning only the latest year/month partitions) to reduce the `update_all.py` startup time from ~10 minutes to seconds.
+2.  **Verify Workflow:** Run `./start-analysis.sh` to spin up the environment, perform a basic check, and then run `./stop-analysis.sh` to confirm the safety checks and teardown process work as expected.
+3.  **Begin Data Analysis:** Once verified, proceed with the original goal of exploring the processed trade data in the Jupyter notebooks.
 
 **Important Patterns and Preferences:**
 - **Develop Local, Run Remote:** The workflow is strictly: edit code locally -> push to GitHub -> start analyzer (auto-pulls) -> run analysis. Direct editing on the analyzer is permitted but requires manual committing before shutdown.
