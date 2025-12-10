@@ -19,8 +19,7 @@
 
 **Key Data Pipeline Patterns & Learnings:**
 - **Schema Drift:** The `goldsky/orderFilled` raw data has significant schema drift. The `timestamp` column has inconsistent data types (`String` vs. `Int64`) across historical files. Any function that processes this data must be robust to this inconsistency.
-- **Inefficient Startup:** The current, functional version of `get_latest_timestamp` works by scanning all historical files. This is known to be slow and causes a significant delay (10+ minutes) on script startup.
-    - **Optimization Plan:** Implement "Tail Scanning". Instead of reading the whole dataset, the script will list the `year=YYYY` and `month=MM` directories to find the latest partition, and then `polars` will scan only that specific subset to find the last timestamp.
+- **Tail Scanning (Optimized):** `get_latest_timestamp()` now uses partition directory names (`year=YYYY/month=MM/day=DD`) to locate the latest partition, then scans only those files. Reduced startup from 10+ min to ~2 seconds.
 
 **Cron Job Execution:**
 - A wrapper script (`run_update.sh`) is used to execute the main python script.

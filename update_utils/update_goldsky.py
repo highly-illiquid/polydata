@@ -18,44 +18,59 @@ if not os.path.isdir('goldsky'):
     os.mkdir('goldsky')
 
 def get_latest_timestamp():
-    """Get the latest timestamp from the partitioned parquet dataset, or 0 if it doesn't exist"""
+    """Get the latest timestamp by scanning only the most recent partition (tail scan)."""
     cache_dir = 'goldsky/orderFilled'
     if not os.path.isdir(cache_dir):
-        print("No existing data found, starting from beginning of time (timestamp 0)")
+        print("No existing data found, starting from timestamp 0")
         return 0
 
     try:
+        # Step 1: Find latest year
+        years = sorted([d for d in os.listdir(cache_dir) if d.startswith('year=')], reverse=True)
+        if not years:
+            print("No year partitions found. Starting from timestamp 0.")
+            return 0
+        latest_year_dir = os.path.join(cache_dir, years[0])
+
+        # Step 2: Find latest month in that year
+        months = sorted([d for d in os.listdir(latest_year_dir) if d.startswith('month=')],
+                        key=lambda x: int(x.split('=')[1]), reverse=True)
+        if not months:
+            print("No month partitions found. Starting from timestamp 0.")
+            return 0
+        latest_month_dir = os.path.join(latest_year_dir, months[0])
+
+        # Step 3: Find latest day in that month
+        days = sorted([d for d in os.listdir(latest_month_dir) if d.startswith('day=')],
+                      key=lambda x: int(x.split('=')[1]), reverse=True)
+        if not days:
+            print("No day partitions found. Starting from timestamp 0.")
+            return 0
+        latest_day_dir = os.path.join(latest_month_dir, days[0])
+
+        # Step 4: Scan only the parquet files in the latest day partition
         import glob
-        files = glob.glob(f'{cache_dir}/**/*.parquet', recursive=True)
+        files = glob.glob(os.path.join(latest_day_dir, '*.parquet'))
         if not files:
-            print("No parquet files found. Starting from timestamp 0.")
+            print("No parquet files in latest partition. Starting from timestamp 0.")
             return 0
 
-        max_timestamps = []
-        for f in files:
-            try:
-                max_ts = pl.read_parquet(f).select(pl.col('timestamp').cast(pl.Int64).max()).item()
-                if max_ts is not None:
-                    max_timestamps.append(max_ts)
-            except Exception as e:
-                print(f"Could not process file {f}: {e}")
-                continue
+        max_ts = (
+            pl.scan_parquet(files)
+            .select(pl.col('timestamp').cast(pl.Int64).max())
+            .collect()
+            .item()
+        )
+
+        if max_ts:
+            readable = datetime.fromtimestamp(int(max_ts), tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
+            print(f'Resuming from timestamp {max_ts} ({readable})')
+            return int(max_ts)
         
-        if not max_timestamps:
-            print("No timestamps found in any files.")
-            return 0
-
-        latest_timestamp = max(max_timestamps)
-
-        if latest_timestamp:
-            readable_time = datetime.fromtimestamp(int(latest_timestamp), tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
-            print(f'Resuming from timestamp {latest_timestamp} ({readable_time})')
-            return int(latest_timestamp)
-        else:
-            print("No existing data found, starting from beginning of time (timestamp 0)")
-            return 0
+        print("No timestamps found. Starting from timestamp 0.")
+        return 0
     except Exception as e:
-        print(f"Error reading latest timestamp: {e}. Starting from timestamp 0.")
+        print(f"Error in tail scan: {e}. Starting from timestamp 0.")
         return 0
 
 def scrape(at_once=1000):
