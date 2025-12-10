@@ -23,7 +23,7 @@ source /root/poly-data/.venv/bin/activate
 
 # Run the Python script and log the output
 echo "Starting update at $(date)" >> "$LOG_FILE"
-python /root/poly-data/fetcher/update_all.py >> "$LOG_FILE" 2>&1
+python /root/poly-data/update_all.py >> "$LOG_FILE" 2>&1
 echo "Finished update at $(date)" >> "$LOG_FILE"
 
 # Remove the lock file
