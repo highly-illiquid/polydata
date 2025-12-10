@@ -10,10 +10,12 @@ This architecture is designed for cost-efficiency and separation of concerns. It
 
 - **Storage (`poly-data-volume`):** A persistent Hetzner Cloud Volume that stores all project data. This volume is moved between the two servers.
 
-### 3. Folder Structure (Refactored)
-To ensure separation of concerns and prevent cross-contamination:
-- **`fetcher/`**: Scripts running on the `poly-fetcher` VPS (e.g., `update_all.py`, `run_update.sh`). Optimized for low memory.
-- **`shared/`**: Common utilities (`poly_utils/`) used by both.
+### 3. Folder Structure (Simplified)
+The project follows a standard, flat Python structure:
+- **`update_all.py`**: The main entry point for the data pipeline.
+- **`run_update.sh`**: The wrapper script for cron execution.
+- **`poly_utils/`**: Core utility library (formerly shared).
+- **`update_utils/`**: Modules for specific update tasks (markets, goldsky, processing).
 - **`processed/`**: Data output directory (Parquet files).
 - **`markets_partitioned/`**: Market metadata (Parquet files).
 
@@ -21,9 +23,9 @@ To ensure separation of concerns and prevent cross-contamination:
 The project is split into two Git repositories to separate public infrastructure from private trading strategies ("Alpha").
 
 - **Repo 1: `poly-data` (Public/Shared Infrastructure)**
-    - Contains: `fetcher/`, `shared/`, setup scripts.
+    - Contains: The data pipeline code (`update_all.py`, `poly_utils`, etc.).
     - Role: The "engine" that collects data.
-    - Deployment: Deployed on `poly-fetcher` and `poly-analyzer`.
+    - Layout: Flat, standard Python project.
 
 - **Repo 2: `poly-strategies` (Private Analysis)**
     - Contains: Jupyter notebooks, backtests, specific research, and automation scripts (`start-analysis.sh`, `stop-analysis.sh`).
