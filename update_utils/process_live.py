@@ -7,7 +7,7 @@ import datetime
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 import polars as pl
-from shared.poly_utils.utils import get_markets, update_missing_tokens
+from poly_utils.utils import get_markets, update_missing_tokens
 
 def get_processed_df(df, markets_long):
 
