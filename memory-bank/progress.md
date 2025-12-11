@@ -2,6 +2,7 @@
 
 **What Works:**
 - **Dual-Server Automation:** `start-analysis.sh` and `stop-analysis.sh` are fully functional, handling server creation/deletion, volume attachment/detachment, and code updates.
+- **Fetcher Safety:** `run_update.sh` now manages `/tmp/poly-fetcher.lock` to signal busy status, preventing the automation scripts from interrupting a running fetch.
 - **Data Safety:** The automation includes a critical safety check that prevents the analyzer from being deleted if there are uncommitted Git changes.
 - **Persistent Environment:** The `poly-fetcher` correctly saves and restores `tmux` sessions across reboots using `tmux-continuum`.
 - **Data Pipeline:** The core data collection (`update_all.py`) continues to run reliably on the fetcher.

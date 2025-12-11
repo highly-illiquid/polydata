@@ -12,6 +12,7 @@
 - **Handoff note:** Pipeline optimization complete. Ready for analysis workflow verification.
 
 ### Recent Changes:
+- **Safety Mechanism:** Updated `run_update.sh` to create and manage an external lock file (`/tmp/poly-fetcher.lock`). This signals to `start-analysis.sh` that a fetch is in progress, preventing accidental server shutdown.
 - **Structural Refactor:** Flattened the project structure. Moved files from `fetcher/` and `shared/poly_utils` back to the project root. The `poly-data` repo is now a standard, single-level Python project.
 - **Repository Split:** Separated the project into two repositories:
     - `poly-data`: Public infrastructure and fetcher code.

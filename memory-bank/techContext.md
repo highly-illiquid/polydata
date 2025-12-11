@@ -24,7 +24,10 @@
 **Cron Job Execution:**
 - A wrapper script (`run_update.sh`) is used to execute the main python script.
 - **Critical:** The wrapper script **must** `cd` into the project directory (`/root/poly-data`) before execution to ensure all relative paths are resolved correctly.
-- A lock file (`update_all.lock`) is used within the wrapper to prevent multiple instances of the job from running simultaneously.
+- **Lock Files:**
+    - `update_all.lock`: Prevents multiple instances of the python script from running simultaneously.
+    - `/tmp/poly-fetcher.lock`: An external signal file used by `start-analysis.sh` to detect if a fetch is in progress before shutting down the server.
+- **Safety Pattern:** The script uses a bash `trap cleanup EXIT` pattern to ensure both lock files are reliably removed upon script termination, regardless of success, failure, or interruption.
 
 **Troubleshooting:**
 - **CRITICAL - Stale Python Cache:** When debugging issues where the code's behavior does not match the source file, the **first step** should be to suspect and delete stale `.pyc` files. This is done by removing all `__pycache__` directories (`find . -type d -name "__pycache__" -exec rm -r {} +`). This was the root cause of a major, multi-hour debugging session where reverted code was not actually being executed.

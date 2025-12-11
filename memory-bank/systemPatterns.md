@@ -39,6 +39,7 @@ The project is split into two Git repositories to separate public infrastructure
 The switching process is handled by automation scripts (`start-analysis.sh`, `stop-analysis.sh`) run from the user's local machine using the `hcloud` CLI.
 
 1.  **`start-analysis.sh`:**
+    *   **Safety Check:** SSHes into `poly-fetcher` and checks for `/tmp/poly-fetcher.lock`. If the lock exists (meaning a fetch is in progress), the script aborts to prevent data corruption.
     *   Powers down the `poly-fetcher` server (for safe volume detachment).
     *   Detaches the `poly-data-volume`.
     *   Creates a new `poly-analyzer` server from the pre-configured snapshot.
