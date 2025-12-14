@@ -26,3 +26,6 @@ __pycache__/
 markets_partitioned/
 *.log
 
+
+.gemini/
+gha-creds-*.json
